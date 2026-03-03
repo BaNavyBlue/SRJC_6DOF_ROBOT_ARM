@@ -74,7 +74,7 @@ void IRQ_HIT(timer_callback_args_t *p_args) {
     if(!button1){
       if(button1_counts >= 2){
         b1_mode = !b1_mode;
-        button1_counts = -10;
+        button1_counts = -20;
       } else {
         button1_counts++;
       }
@@ -85,7 +85,7 @@ void IRQ_HIT(timer_callback_args_t *p_args) {
     if(!button2){
       if(button2_counts >= 2){
         b2_mode = !b2_mode;
-        button2_counts = -10;
+        button2_counts = -20;
       } else {
         button2_counts++;
       }
@@ -94,6 +94,7 @@ void IRQ_HIT(timer_callback_args_t *p_args) {
     }
 }
 
+// This is only really for scrolling text that doesn't slow down the main loop.
 void matrixCallback() {
   // callback is executed in IRQ and should run as fast as possible
   requestNext = true;
