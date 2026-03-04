@@ -43,7 +43,7 @@ const float ANGLE_RANGE = 188.0;
 const uint16_t CLAW_MIN_TICKS = 1740;
 const uint16_t CLAW_MAX_TICKS = 2842;
 
-const float EXTERNAL_CLOCK = 50000000.0; //50MHz
+const float EXTERNAL_CLOCK = 25000000.0; //25MHz
 const float PWM_FREQ = 329.9198; // Frequency Calculated from Prescaler math.
 // const float PWM_FREQ = 50.0;
 
@@ -206,7 +206,7 @@ void setup()
   pinMode(SWITCH2_PIN, INPUT_PULLUP);
 
   // I decided to do a dynamic memory initialization of the PCA Controller.  No real reason other than C++
-  pcaController = new PCA9685(i2cAddress, EXTERNAL_CLOCK); // set to 50MHz External Clock
+  pcaController = new PCA9685(i2cAddress); // set to 25MHz Internal Clock Default
   pcaController->sleepPCA();
   pcaController->setPWMFrequency(PWM_FREQ);  // Frequency Calculated from Prescaler math.
   pcaController->setPWMBias(PWM_BIAS);
