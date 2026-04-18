@@ -127,119 +127,135 @@ float calculated_angle(uint8_t channel);
 
 void setup()
 {
-  Serial.begin(115200);
-  Wire.begin(); // Need For I2C
-  delay(2000);
+    Serial.begin(115200);
+    Wire.begin(); // Need For I2C
+    delay(2000);
 
 
-  // This globals are for the interupt timer.
-  uint8_t timerType = GPT_TIMER;
-  int8_t channel = FspTimer::get_available_timer(timerType);
+    // These variables are for the interupt timer.
+    uint8_t timerType = GPT_TIMER;
+    int8_t channel = FspTimer::get_available_timer(timerType);
   
-  if (channel < 0) {
-    // Handle error if no timer is available
-    Serial.println("Timer Channel Error!");
-    while (1);
-  }
-
-  bool ok = Timer.begin(TIMER_MODE_PERIODIC, timerType, channel, 100.0, 50.0, &IRQ_HIT); // 100 Hz, 50% duty cycle (though duty cycle is less relevant for simple periodic interrupt)
-  if (!ok) {
-    // Handle error if timer init failed
-    Serial.println("Your timer is fail!");
-    while (1);
-  }
-
-
-  Timer.setup_overflow_irq(); // Connects the timer event to the CPU ISR
-  Timer.open(); // Required to make it work
-  Timer.start();
-
-  //digitalWrite(SDA, 1); // Enable Arduiono 50kohm pullup resistor on SDA
-  //digitalWrite(SCL, 1); // Enable Arduiono 50kohm pullup resistor on SCL
-
-  // Section for the UNO R4 LED Matrix
-  matrix.begin();
-
-  matrix.beginDraw();
-
-  matrix.stroke(0xFFFFFFFF);
-  matrix.textScrollSpeed(100);
-  matrix.setCallback(matrixCallback);
-
-  sprintf(matMsg, "Scanning...");
-  matrix.textFont(Font_4x6);
-  matrix.beginText(0, 1, 0xFFFFFF);
-  matrix.println(matMsg);
-  matrix.endTextAnimation(SCROLL_LEFT, anim);
-  
-  matrix.loadTextAnimationSequence(anim);
-  matrix.play();
-  // Serial.println("Scanning...");
-  sprintf(matMsg, "Found device at ");
-
-  // This For Loop just reports i2c devices found
-  for (byte addr = 1; addr < 127; addr++) {
-    Wire.beginTransmission(addr);
-    if (Wire.endTransmission() == 0) {
-      //matrix.endDraw();
-      char found[16];
-      sprintf(found, " 0x%x", addr);
-      strcat(matMsg, found);
-      Serial.print("Found device at 0x");
-      Serial.println(addr, HEX);
-
+    if (channel < 0) {
+        // Handle error if no timer is available
+        Serial.println("Timer Channel Error!");
+        while (1);
     }
-  }
-  // matrix.textFont(Font_4x6);
-  matrix.endDraw();
-  matrix.beginText(0, 1, 0xFFFFFF);
-  matrix.println(matMsg);
-  matrix.endTextAnimation(SCROLL_LEFT, anim);
 
-  matrix.loadTextAnimationSequence(anim);
-  matrix.play();
-
-  delay(10000); // Just here to see "Found Message"
-  matrix.endDraw();
-  analogReadResolution(10);
-
-  pinMode(SWITCH1_PIN, INPUT_PULLUP);
-  pinMode(SWITCH2_PIN, INPUT_PULLUP);
-
-  // I decided to do a dynamic memory initialization of the PCA Controller.  No real reason other than C++
-  pcaController = new PCA9685(i2cAddress); // set to 25MHz Internal Clock Default
-  pcaController->sleepPCA();
-  pcaController->setPWMFrequency(PWM_FREQ);  // Frequency Calculated from Prescaler math.
-  pcaController->setPWMBias(PWM_BIAS);
-  //pcaController->setAllPWM(0, 0);
-
-  // Set Min Mid and Max values for Servos. All the same by default except the Claw
-  for (int i = 0; i < PWM_CHANNELS; ++i){
-      pwm_min[i] = calculate12BitTicks(MIN_PERIOD, pcaController);
-      pwm_mid[i] = calculate12BitTicks(MID_PERIOD, pcaController);
-      pwm_max[i] = calculate12BitTicks(MAX_PERIOD, pcaController);
-      pwm_pos[i] = calculate12BitTicks(MID_PERIOD, pcaController);
-      pwm_12BitRange[i] = pwm_max[i] - pwm_min[i]; 
-  }
-  // Go back and set the claw values.
-  //
-  // This gives the min to max pwm range in amount of ticks per Degree
-  float ticks_per_deg = (pwm_max[0] - pwm_min[0])/180.0;
-
-  pwm_min[5] = pwm_min[0] + lround(CLAW_MIN_DEGREES*ticks_per_deg);
-  pwm_max[5] = pwm_min[0] + lround(CLAW_MAX_DEGREES*ticks_per_deg);
-
-  Serial.print("min: "); Serial.print(pwm_min[0]);
-  Serial.print(", mid: "); Serial.print(pwm_mid[0]);
-  Serial.print(", max: "); Serial.print(pwm_max[0]);
-  Serial.print(", 12BitRange: "); Serial.print(pwm_12BitRange[0]);
-  Serial.print(", Degree Step Size: "); Serial.println(ANGLE_RANGE/((float)pwm_12BitRange[0]));
+    bool ok = Timer.begin(TIMER_MODE_PERIODIC, timerType, channel, 100.0, 50.0, &IRQ_HIT); // 100 Hz, 50% duty cycle (though duty cycle is less relevant for simple periodic interrupt)
+    if (!ok) {
+        // Handle error if timer init failed
+        Serial.println("Your timer is fail!");
+        while (1);
+    }
 
 
-  delay(1000);
-  // This function trys to set the main arm to 135degrees currently bassed off starting accelerometer position need to update for full home. 
-  find_starting_angle_and_home();
-  delay(1000);
+    Timer.setup_overflow_irq(); // Connects the timer event to the CPU ISR
+    Timer.open(); // Required to make it work
+    Timer.start();
+
+    //digitalWrite(SDA, 1); // Enable Arduiono 50kohm pullup resistor on SDA
+    //digitalWrite(SCL, 1); // Enable Arduiono 50kohm pullup resistor on SCL
+
+    // Section for the UNO R4 LED Matrix
+    matrix.begin();
+
+    matrix.beginDraw();
+
+    matrix.stroke(0xFFFFFFFF);
+    matrix.textScrollSpeed(100);
+    matrix.setCallback(matrixCallback);
+
+    sprintf(matMsg, "Scanning...");
+    matrix.textFont(Font_4x6);
+    matrix.beginText(0, 1, 0xFFFFFF);
+    matrix.println(matMsg);
+    matrix.endTextAnimation(SCROLL_LEFT, anim);
+  
+    matrix.loadTextAnimationSequence(anim);
+    matrix.play();
+    // Serial.println("Scanning...");
+    sprintf(matMsg, "Found device at ");
+
+    // This For Loop just reports i2c devices found
+    for (byte addr = 1; addr < 127; addr++) {
+        Wire.beginTransmission(addr);
+        if (Wire.endTransmission() == 0) {
+            //matrix.endDraw();
+            char found[16];
+            sprintf(found, " 0x%x", addr);
+            strcat(matMsg, found);
+            Serial.print("Found device at 0x");
+            Serial.println(addr, HEX);
+
+        }
+    }
+
+    Wire.end(); // closing wire device after verifying address.
+    delay(100);
+
+
+    // matrix.textFont(Font_4x6);
+    matrix.endDraw();
+    matrix.beginText(0, 1, 0xFFFFFF);
+    matrix.println(matMsg);
+    matrix.endTextAnimation(SCROLL_LEFT, anim);
+
+    matrix.loadTextAnimationSequence(anim);
+    matrix.play();
+
+    delay(10000); // Just here to see "Found Message"
+    matrix.endDraw();
+    analogReadResolution(10);
+
+    pinMode(SWITCH1_PIN, INPUT_PULLUP);
+    pinMode(SWITCH2_PIN, INPUT_PULLUP);
+
+    // I decided to do a dynamic memory initialization of the PCA Controller.  No real reason other than C++
+    pcaController = new PCA9685(i2cAddress); // set to 25MHz Internal Clock Default
+    pcaController->sleepPCA();
+    pcaController->setPWMFrequency(PWM_FREQ);  // Frequency Calculated from Prescaler math.
+    pcaController->setPWMBias(PWM_BIAS);
+    //pcaController->setAllPWM(0, 0);
+
+    delay(100);
+
+    // Verify the chip is actually awake
+    uint8_t mode = pcaController->readByte(0x00); // MODE1
+    if (mode & 0x10) {
+        Serial.println("Warning: PCA9685 is still in SLEEP mode!");
+    } else {
+        Serial.println("PCA9685 is awake and running.");
+    }
+
+
+    // Set Min Mid and Max values for Servos. All the same by default except the Claw
+    for (int i = 0; i < PWM_CHANNELS; ++i){
+        pwm_min[i] = calculate12BitTicks(MIN_PERIOD, pcaController);
+        pwm_mid[i] = calculate12BitTicks(MID_PERIOD, pcaController);
+        pwm_max[i] = calculate12BitTicks(MAX_PERIOD, pcaController);
+        pwm_pos[i] = calculate12BitTicks(MID_PERIOD, pcaController);
+        pwm_12BitRange[i] = pwm_max[i] - pwm_min[i]; 
+    }
+    // Go back and set the claw values.
+    //
+    // This gives the min to max pwm range in amount of ticks per Degree
+    float ticks_per_deg = (pwm_max[0] - pwm_min[0])/180.0;
+
+    pwm_min[5] = pwm_min[0] + lround(CLAW_MIN_DEGREES*ticks_per_deg);
+    pwm_max[5] = pwm_min[0] + lround(CLAW_MAX_DEGREES*ticks_per_deg);
+
+    Serial.print("min: "); Serial.print(pwm_min[0]);
+    Serial.print(", mid: "); Serial.print(pwm_mid[0]);
+    Serial.print(", max: "); Serial.print(pwm_max[0]);
+    Serial.print(", 12BitRange: "); Serial.print(pwm_12BitRange[0]);
+    Serial.print(", Degree Step Size: "); Serial.println(ANGLE_RANGE/((float)pwm_12BitRange[0]));
+
+
+    delay(1000);
+    // This function trys to set the main arm to 135degrees currently bassed off starting accelerometer position need to update for full home. 
+    find_starting_angle_and_home();
+    delay(1000);
   
 }
 

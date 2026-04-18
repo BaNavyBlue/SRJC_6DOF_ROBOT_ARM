@@ -38,8 +38,22 @@ void setup()
       Serial.println(addr, HEX);
     }
   }
+
+  Wire.end(); // closing wire device after verifying address.
+  delay(100);
+
     pcaController = new PCA9685(i2cAddress); // Default 25MHz internal Clock
-    pcaController->setPWMFrequency(PWM_FREQ);  
+    pcaController->setPWMFrequency(PWM_FREQ);
+    delay(100);
+
+    // Verify the chip is actually awake
+    uint8_t mode = pcaController->readByte(0x00); // MODE1
+    if (mode & 0x10) {
+        Serial.println("Warning: PCA9685 is still in SLEEP mode!");
+    } else {
+        Serial.println("PCA9685 is awake and running.");
+    }
+
     for (int i = 0; i < PWM_CHANNELS; ++i){
         pwm_min[i] = calculate12BitTicks(MIN_PERIOD, pcaController);
         pwm_mid[i] = calculate12BitTicks(MID_PERIOD, pcaController);
@@ -55,13 +69,13 @@ void setup()
 
 void loop()
 {
-    // Serial.println("Setting min");
+    //Serial.println("Setting min");
     pcaController->setPWM(0, 0, pwm_min[0]);
     delay(1000);
-    // Serial.println("Setting mid");
+    //Serial.println("Setting mid");
     pcaController->setPWM(0, 0, pwm_mid[0]);
     delay(1000);
-    // Serial.println("Setting max");
+    //Serial.println("Setting max");
     pcaController->setPWM(0, 0, pwm_max[0]);
     delay(1000);
 

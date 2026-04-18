@@ -47,33 +47,48 @@ void set_pos(uint16_t axis_value, uint8_t channel);
 
 void setup()
 {
-  Serial.begin(115200);
-  Wire.begin(); // Need For I2C
-  delay(2000);
-  digitalWrite(SDA, 1); // Enable Arduiono 50kohm pullup resistor on SDA
-  digitalWrite(SCL, 1); // Enable Arduiono 50kohm pullup resistor on SCL
+    Serial.begin(115200);
+    Wire.begin(); // Need For I2C
+    delay(2000);
+    digitalWrite(SDA, 1); // Enable Arduiono 50kohm pullup resistor on SDA
+    digitalWrite(SCL, 1); // Enable Arduiono 50kohm pullup resistor on SCL
 
-  Serial.println("Scanning...");
+    Serial.println("Scanning...");
 
 
-  // This For Loop just reports i2c devices found
-  for (byte addr = 1; addr < 127; addr++) {
-    Wire.beginTransmission(addr);
-    if (Wire.endTransmission() == 0) {
-      Serial.print("Found device at 0x");
-      Serial.println(addr, HEX);
+    // This For Loop just reports i2c devices found
+    for (byte addr = 1; addr < 127; addr++) {
+        Wire.beginTransmission(addr);
+        if (Wire.endTransmission() == 0) {
+            Serial.print("Found device at 0x");
+            Serial.println(addr, HEX);
+        }
     }
-  }
 
-  analogReadResolution(10);
+    Wire.end(); // closing wire device after verifying address.
+    delay(100);
 
-  pinMode(SWITCH1_PIN, INPUT);
-  pinMode(SWITCH2_PIN, INPUT);
-  digitalWrite(SWITCH1_PIN, HIGH);
-  digitalWrite(SWITCH2_PIN, HIGH);
 
-  pcaController = new PCA9685(i2cAddress); // set to 25MHz Internal Clock
-  pcaController->setPWMFrequency(PWM_FREQ);  // Frequency Calculated from Prescaler math.
+    analogReadResolution(10);
+
+    pinMode(SWITCH1_PIN, INPUT);
+    pinMode(SWITCH2_PIN, INPUT);
+    digitalWrite(SWITCH1_PIN, HIGH);
+    digitalWrite(SWITCH2_PIN, HIGH);
+
+    pcaController = new PCA9685(i2cAddress); // set to 25MHz Internal Clock
+    pcaController->setPWMFrequency(PWM_FREQ);  // Frequency Calculated from Prescaler math.
+
+    delay(100);
+
+    // Verify the chip is actually awake
+    uint8_t mode = pcaController->readByte(0x00); // MODE1
+    if (mode & 0x10) {
+        Serial.println("Warning: PCA9685 is still in SLEEP mode!");
+    } else {
+        Serial.println("PCA9685 is awake and running.");
+    }
+
 
   for (int i = 0; i < PWM_CHANNELS; ++i){
       pwm_min[i] = calculate12BitTicks(MIN_PERIOD, pcaController);
