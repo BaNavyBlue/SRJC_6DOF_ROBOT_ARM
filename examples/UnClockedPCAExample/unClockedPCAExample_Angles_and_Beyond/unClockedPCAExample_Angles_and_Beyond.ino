@@ -380,6 +380,7 @@ void loop()
       break;
     case 2:
       if(b1_mode == 2){
+        // Basic pickup and set down routine
         while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,pwm_min[5])){}
         while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,pwm_max[5])){}
         while(!moveArmTo(DROP_0, DROP_1,DROP_2,DROP_3,DROP_4,pwm_max[5])){}
@@ -387,6 +388,7 @@ void loop()
         b1_mode = 0;
         b2_mode = 0;
       } else if(b1_mode == 3){
+        // Set arm to prone position
         while(!moveArmTo(90.0, 90.0,90.0,90.0,90.0,pwm_min[5])){}
         while(!moveArmTo(PRONE_0, PRONE_1,PRONE_2,PRONE_3,PRONE_4,pwm_min[5])){}
         b1_mode = 0;
