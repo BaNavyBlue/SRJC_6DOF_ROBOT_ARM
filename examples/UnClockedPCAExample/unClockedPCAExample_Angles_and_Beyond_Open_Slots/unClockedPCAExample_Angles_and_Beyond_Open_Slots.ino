@@ -43,7 +43,7 @@
 #define DROP_1 141.536865
 #define DROP_2 40.28107
 #define DROP_3 16.593977
-#define DROP_4 10.281758
+#define DROP_4 104.31
 #define DROP_5 150.386993
 
 #define PRONE_0 105.811012
@@ -52,7 +52,7 @@
 #define PRONE_3 188.0
 #define PRONE_4 16.919350
 
-#define MODES 4
+#define MODES 6
 
 #define MAX_PWM_FREQ 329.9198 // Don't change
 
@@ -75,9 +75,14 @@ const float CLAW_MAX_DEGREES = 144.0; //2842;
 
 const float EXTERNAL_CLOCK = 25000000.0; //25MHz
 const float PWM_FREQ = 329.9198; // Frequency Calculated from Prescaler math.
-// const float PWM_FREQ = 50.0;
+// const float PWM_FREQ = 150.0;
 
+// This is to allow user to change PWM_FREQ and scale step sizes along with different PWM frequency.
+const uint8_t STEP_LARGE = lround((LARGE_STEP*PWM_FREQ)/MAX_PWM_FREQ);
+const uint8_t STEP_MED = lround((MED_STEP*PWM_FREQ)/MAX_PWM_FREQ);
+const uint8_t STEP_SMALL = lround((SMALL_STEP*PWM_FREQ)/MAX_PWM_FREQ);
 
+const uint8_t BIAS_PWM = lround((PWM_BIAS*PWM_FREQ)/MAX_PWM_FREQ);
 
 // Global Variables
 Mx2125  Accelerometer(ACC_XAXIS, ACC_YAXIS, A5);
@@ -123,6 +128,13 @@ const uint8_t CLAW_AUTO_OPEN_PERCENT = 100;
 const uint8_t CLAW_AUTO_CLOSED_PERCENT = 15;
 /* End CHAT GPT BLOCK */
 
+// this allows routine speed values to change when Changing PWM Frequency.
+const uint8_t CLAW_SPEED = 27;
+const uint8_t WRIST_SPEED = 27;
+const uint8_t SPEED_AUTO = lround((AUTO_SPEED*PWM_FREQ)/MAX_PWM_FREQ);
+const uint8_t SPEED_CLAW = lround((CLAW_SPEED*PWM_FREQ)/MAX_PWM_FREQ);
+const uint8_t SPEED_WRIST = lround((WRIST_SPEED*PWM_FREQ)/MAX_PWM_FREQ);
+
 /* This is an interrupt timer for handling button push events*/
 void IRQ_HIT(timer_callback_args_t *p_args) {
 
@@ -150,7 +162,11 @@ void IRQ_HIT(timer_callback_args_t *p_args) {
 
     if(!button2){
       if(button2_counts >= 2){
-        b2_mode = (b2_mode + 1) % (MODES - 1);
+        b2_mode++;
+        // Right Now b2_mode is only 0 1 and 2. 2 Is for running routines set on b1 higher than 1.
+        if(b2_mode > 2){
+          b2_mode = 0;
+        }
         button2_counts = -20;
       } else {
         button2_counts++;
@@ -280,7 +296,7 @@ void setup()
     pcaController = new PCA9685(i2cAddress); // set to 25MHz Internal Clock Default
     pcaController->sleepPCA();
     pcaController->setPWMFrequency(PWM_FREQ);  // Frequency Calculated from Prescaler math.
-    pcaController->setPWMBias(PWM_BIAS);
+    pcaController->setPWMBias(BIAS_PWM);
     //pcaController->setAllPWM(0, 0);
 
     delay(100);
@@ -323,6 +339,10 @@ void setup()
     delay(1000);
     // This function trys to set the main arm to 135degrees currently bassed off starting accelerometer position need to update for full home. 
     find_starting_angle_and_home();
+    delay(50);
+    pcaController->setPWM(2, 0, pwm_mid[2]);
+    delay(50);
+    pcaController->setPWM(5, 0, pwm_mid[5]);
     delay(1000);
   
 }
@@ -357,7 +377,7 @@ void loop()
   
   // Check for current mode of opperation for servo access.
 
-  switch(b1_mode){
+  switch(b1_mode & 0x01){
     case 0:
       set_pos(x1, ROTATE_BASE);
       set_pos(y1, ARM_SEG1);
@@ -383,6 +403,11 @@ void loop()
     case 2:
       if(b1_mode == 2){
         // Basic pickup and set down routine
+        float curr[6];
+        // curr[0] = calculated_angle(ROTATE_BASE);
+        curr[2] = calculated_angle(ARM_SEG2);
+        curr[3] = calculated_angle(ARM_SEG3);
+        while(!moveArmTo(PICKUP_0, 93.90239,curr[2],curr[3],PICKUP_4,pwm_mid[5])){}
         while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,pwm_min[5])){}
         while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,pwm_max[5])){}
         while(!moveArmTo(DROP_0, DROP_1,DROP_2,DROP_3,DROP_4,pwm_max[5])){}
@@ -394,6 +419,16 @@ void loop()
         while(!moveArmTo(90.0, 90.0,90.0,90.0,90.0,pwm_min[5])){}
         while(!moveArmTo(PRONE_0, PRONE_1,PRONE_2,PRONE_3,PRONE_4,pwm_min[5])){}
         b1_mode = 0;
+        b2_mode = 0;
+      } else if(b1_mode == 4){
+        // Your Routine Here
+        b1_mode = 0;
+        b2_mode = 0;        
+      } else if(b1_mode == 5){
+        // Your Routine Here
+        b1_mode = 0;
+        b2_mode = 0;
+      } else {
         b2_mode = 0;
       }
       break;
@@ -413,8 +448,8 @@ void loop()
 
 
   /* This code is much faster than doing multiple Serial.print commands */
-  sprintf(serialMsg, "ang[0]: %f, ang[1]: %f, ang[2]: %f, ang[3]: %f, ang[4]: %f, ang[5]: %f\n", calculated_angle(0), calculated_angle(1), calculated_angle(2), calculated_angle(3), calculated_angle(4), calculated_angle(5));
-  Serial.print(serialMsg);
+  // sprintf(serialMsg, "ang[0]: %f, ang[1]: %f, ang[2]: %f, ang[3]: %f, ang[4]: %f, ang[5]: %f\n", calculated_angle(0), calculated_angle(1), calculated_angle(2), calculated_angle(3), calculated_angle(4), calculated_angle(5));
+  // Serial.print(serialMsg);
 
   // This code updates  led matrix display to show mode from left and right button press.
   if(b1_prev != b1_mode || b2_prev != b2_mode){
@@ -445,11 +480,11 @@ uint16_t calculate12BitTicks(float inPeriod, PCA9685* pcaCont)
 void set_pos(uint16_t axis_value, uint8_t channel){
   if(pwm_pos[channel] <= pwm_max[channel]){
     if(axis_value > 900){
-      pwm_pos[channel] += LARGE_STEP;
+      pwm_pos[channel] += STEP_LARGE;
     } else if( axis_value > 800){
-      pwm_pos[channel] += MED_STEP;
+      pwm_pos[channel] += STEP_MED;
     } else if(axis_value > 700){
-      pwm_pos[channel] += SMALL_STEP;
+      pwm_pos[channel] += STEP_SMALL;
     } else if(axis_value > 600){
       pwm_pos[channel]++;
     }
@@ -458,11 +493,11 @@ void set_pos(uint16_t axis_value, uint8_t channel){
 
   if(pwm_pos[channel] >= pwm_min[channel]){
     if(axis_value < 100){
-      pwm_pos[channel] -= LARGE_STEP;
+      pwm_pos[channel] -= STEP_LARGE;
     } else if( axis_value < 200){
-      pwm_pos[channel] -= MED_STEP;
+      pwm_pos[channel] -= STEP_MED;
     } else if(axis_value < 300){
-      pwm_pos[channel] -= SMALL_STEP;
+      pwm_pos[channel] -= STEP_SMALL;
     } else if(axis_value < 400){
       pwm_pos[channel]--;
     }
@@ -580,12 +615,12 @@ uint16_t clawPercentToTicks(uint8_t percentOpen){
    their desired coordinate */
 bool moveArmTo(float baseDeg, float seg1Deg, float seg2Deg, float seg3Deg, float wristDeg, uint16_t clawTicks){
   bool done = true;
-  done &= moveChannelToward(ROTATE_BASE, angleToTicks(ROTATE_BASE, baseDeg), AUTO_SPEED);
-  done &= moveChannelToward(ARM_SEG1, angleToTicks(ARM_SEG1, seg1Deg), AUTO_SPEED);
-  done &= moveChannelToward(ARM_SEG2, angleToTicks(ARM_SEG2, seg2Deg), AUTO_SPEED);
-  done &= moveChannelToward(ARM_SEG3, angleToTicks(ARM_SEG3, seg3Deg), AUTO_SPEED);
-  done &= moveChannelToward(WRIST, angleToTicks(WRIST, wristDeg), AUTO_SPEED);
-  done &= moveChannelToward(CLAW, clawTicks, AUTO_SPEED);
+  done &= moveChannelToward(ROTATE_BASE, angleToTicks(ROTATE_BASE, baseDeg), SPEED_AUTO);
+  done &= moveChannelToward(ARM_SEG1, angleToTicks(ARM_SEG1, seg1Deg), SPEED_AUTO);
+  done &= moveChannelToward(ARM_SEG2, angleToTicks(ARM_SEG2, seg2Deg), SPEED_AUTO);
+  done &= moveChannelToward(ARM_SEG3, angleToTicks(ARM_SEG3, seg3Deg), SPEED_AUTO);
+  done &= moveChannelToward(WRIST, angleToTicks(WRIST, wristDeg), SPEED_WRIST);
+  done &= moveChannelToward(CLAW, clawTicks, SPEED_CLAW);
   return done;
 }
 
