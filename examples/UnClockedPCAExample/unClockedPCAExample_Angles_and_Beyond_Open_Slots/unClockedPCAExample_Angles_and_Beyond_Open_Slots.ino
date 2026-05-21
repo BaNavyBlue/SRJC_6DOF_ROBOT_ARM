@@ -32,27 +32,39 @@
 #define MED_STEP 4
 #define SMALL_STEP 2
 
-#define PICKUP_0 112.578
-#define PICKUP_1 59.608170
-#define PICKUP_2 145.57
+#define PICKUP_0 110.30
+#define PICKUP_1 40.8
+#define PICKUP_2 150.45
 #define PICKUP_3 188
-#define PICKUP_4 10.281758
+#define PICKUP_4 14.9
 #define PICKUP_5 74.705437
 
-#define DROP_0 105.9411
-#define DROP_1 141.536865
-#define DROP_2 40.28107
-#define DROP_3 16.593977
-#define DROP_4 104.31
+#define DROP_0 107.372795
+#define DROP_1 123.511
+#define DROP_2 58.632053
+#define DROP_3 0
+#define DROP_4 103.46
 #define DROP_5 150.386993
 
-#define PRONE_0 105.811012
-#define PRONE_1 180.841812
-#define PRONE_2 6.247145
-#define PRONE_3 188.0
-#define PRONE_4 16.919350
+#define PRONE_0 106.33
+#define PRONE_1 168.868
+#define PRONE_2 42.4285
+#define PRONE_3 160.278
+#define PRONE_4 14.056
 
-#define MODES 6
+#define GIVE_TO_R_0 10.73728
+#define GIVE_TO_R_1 103.92385
+#define GIVE_TO_R_2 97.8068
+#define GIVE_TO_R_3 43.01419
+#define GIVE_TO_R_4 6.57256
+
+#define GET_FROM_L_0 10.73728
+#define GET_FROM_L_1 39.109726
+#define GET_FROM_L_2 96.830742
+#define GET_FROM_L_3 146.6127
+#define GET_FROM_L_4 114.0128
+
+#define MODES 8
 
 #define MAX_PWM_FREQ 329.9198 // Don't change
 
@@ -422,10 +434,42 @@ void loop()
         b2_mode = 0;
       } else if(b1_mode == 4){
         // Your Routine Here
+        // Get From
+        while(!moveArmTo(GET_FROM_L_0, GET_FROM_L_1,GET_FROM_L_2,GET_FROM_L_3, GET_FROM_L_4,pwm_min[5])){}
+        while(!moveArmTo(GET_FROM_L_0, GET_FROM_L_1,GET_FROM_L_2,GET_FROM_L_3, GET_FROM_L_4,pwm_max[5])){}
         b1_mode = 0;
         b2_mode = 0;        
       } else if(b1_mode == 5){
         // Your Routine Here
+        // Give To
+        while(!moveArmTo(GIVE_TO_R_0, GIVE_TO_R_1, GIVE_TO_R_2, GIVE_TO_R_3, GIVE_TO_R_4,pwm_max[5])){}
+        //while(!moveArmTo(GET_FROM_L_0, GET_FROM_L_1,GET_FROM_L_2,GET_FROM_L_3, GET_FROM_L_4,pwm_max[5])){}
+        b1_mode = 0;
+        b2_mode = 0;
+      } else if(b1_mode == 6){
+        // Your Routine Here
+        // Primary Pickup Give To Right
+        float curr[6];
+        // curr[0] = calculated_angle(ROTATE_BASE);
+        curr[2] = calculated_angle(ARM_SEG2);
+        curr[3] = calculated_angle(ARM_SEG3);
+        while(!moveArmTo(PICKUP_0, 93.90239,curr[2],curr[3],PICKUP_4,pwm_mid[5])){}
+        while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,pwm_min[5])){}
+        while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,pwm_max[5])){}
+        while(!moveArmTo(GIVE_TO_R_0, GIVE_TO_R_1, GIVE_TO_R_2, GIVE_TO_R_3, GIVE_TO_R_4,pwm_max[5])){}
+        //while(!moveArmTo(GET_FROM_L_0, GET_FROM_L_1,GET_FROM_L_2,GET_FROM_L_3, GET_FROM_L_4,pwm_max[5])){}
+        b1_mode = 0;
+        b2_mode = 0;
+      } else if (b1_mode == 7){
+        // Your Routine Here
+        // Open Claw Regardless of location
+        float curr[6];
+        curr[0] = calculated_angle(ROTATE_BASE);
+        curr[1] = calculated_angle(ARM_SEG1);
+        curr[4] = calculated_angle(WRIST);
+        curr[2] = calculated_angle(ARM_SEG2);
+        curr[3] = calculated_angle(ARM_SEG3);
+        while(!moveArmTo(curr[0], curr[1],curr[2],curr[3],curr[4],pwm_min[5])){}
         b1_mode = 0;
         b2_mode = 0;
       } else {
@@ -661,7 +705,7 @@ void runAutoRepeatMotion(void){
   // If any joint moves too far for your exact arm, adjust the angle numbers below.
   switch(autoStep){
     case 0: // Center stance, claw open
-      stepDone = moveArmTo(90, 135, 90, 90, 90, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
+      stepDone = moveArmTo(90, 90, 90, 90, 90, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
       break;
     case 1: // Lean left
       stepDone = moveArmTo(55, 128, 82, 102, 65, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
@@ -676,31 +720,31 @@ void runAutoRepeatMotion(void){
       stepDone = moveArmTo(125, 128, 82, 102, 115, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
       break;
     case 5: // Raise up like a wave
-      stepDone = moveArmTo(90, 155, 112, 74, 135, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
+      stepDone = moveArmTo(90, 119, 112, 74, 135, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
       break;
     case 6: // Wrist flick left
-      stepDone = moveArmTo(80, 148, 105, 82, 50, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
+      stepDone = moveArmTo(80, 120, 105, 82, 50, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
       break;
     case 7: // Wrist flick right
-      stepDone = moveArmTo(100, 148, 105, 82, 140, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
+      stepDone = moveArmTo(100, 99, 105, 82, 140, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
       break;
     case 8: // Little dip
       stepDone = moveArmTo(90, 112, 70, 120, 90, clawPercentToTicks(CLAW_AUTO_CLOSED_PERCENT));
       break;
     case 9: // Pop back up and open claw
-      stepDone = moveArmTo(90, 150, 105, 80, 90, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
+      stepDone = moveArmTo(90, 120, 105, 80, 90, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
       break;
     case 10: // Spin/sway left
-      stepDone = moveArmTo(40, 138, 92, 90, 75, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
+      stepDone = moveArmTo(40, 130, 92, 90, 75, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
       break;
     case 11: // Spin/sway right
-      stepDone = moveArmTo(140, 138, 92, 90, 105, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
+      stepDone = moveArmTo(140, 130, 92, 90, 105, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
       break;
     case 12: // Final clap closed in center
-      stepDone = moveArmTo(90, 135, 90, 90, 90, clawPercentToTicks(CLAW_AUTO_CLOSED_PERCENT));
+      stepDone = moveArmTo(90, 125, 90, 90, 90, clawPercentToTicks(CLAW_AUTO_CLOSED_PERCENT));
       break;
     case 13: // Open and repeat
-      stepDone = moveArmTo(90, 135, 90, 90, 90, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
+      stepDone = moveArmTo(90, 125, 90, 90, 90, clawPercentToTicks(CLAW_AUTO_OPEN_PERCENT));
       break;
   }
 
