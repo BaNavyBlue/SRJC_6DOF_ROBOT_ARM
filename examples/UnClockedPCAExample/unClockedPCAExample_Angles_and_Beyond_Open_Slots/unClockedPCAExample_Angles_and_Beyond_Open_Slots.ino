@@ -44,7 +44,7 @@
 #define DROP_2 58.632053
 #define DROP_3 0
 #define DROP_4 103.46
-#define DROP_5 150.386993
+#define DROP_5 117.329
 
 #define PRONE_0 106.33
 #define PRONE_1 168.868
@@ -82,8 +82,8 @@ const float MID_PERIOD = 0.0015;
 const float MAX_PERIOD = 0.00258;  // I added the extra .08ms you may want to remove.
 const float ANGLE_RANGE = 188.0;
 
-const float CLAW_MIN_DEGREES = 74.829; //1740;
-const float CLAW_MAX_DEGREES = 144.0; //2842;
+const float CLAW_MIN_DEGREES = 70.829; //1740;
+const float CLAW_MAX_DEGREES = 140.43; //2842;
 
 const float EXTERNAL_CLOCK = 25000000.0; //25MHz
 const float PWM_FREQ = 329.9198; // Frequency Calculated from Prescaler math.
@@ -419,10 +419,11 @@ void loop()
         // curr[0] = calculated_angle(ROTATE_BASE);
         curr[2] = calculated_angle(ARM_SEG2);
         curr[3] = calculated_angle(ARM_SEG3);
+        curr[5] = angleToTicks(CLAW, PICKUP_0);
         while(!moveArmTo(PICKUP_0, 93.90239,curr[2],curr[3],PICKUP_4,pwm_mid[5])){}
         while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,pwm_min[5])){}
-        while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,pwm_max[5])){}
-        while(!moveArmTo(DROP_0, DROP_1,DROP_2,DROP_3,DROP_4,pwm_max[5])){}
+        while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,curr[5])){}
+        while(!moveArmTo(DROP_0, DROP_1,DROP_2,DROP_3,DROP_4,curr[5])){}
         while(!moveArmTo(DROP_0, DROP_1,DROP_2,DROP_3,DROP_4,pwm_min[5])){}
         b1_mode = 0;
         b2_mode = 0;
@@ -435,14 +436,25 @@ void loop()
       } else if(b1_mode == 4){
         // Your Routine Here
         // Get From
+
+        float curr[6];
+        curr[5] = angleToTicks(CLAW, PICKUP_0);
+        //while(!moveArmTo(10.73728, 78.674973, 56.429525, 188, 114.010384, pwm_min[5])){}
+        //while(!moveArmTo(10.73728, 60.90966,140.560745, 122.014542, 114.010384, pwm_min[5])){}
+        // while(!moveArmTo(10.73728, 102.362068, 118.500519, 188, 110.040848, pwm_min[5])){}
+        // //while(!moveArmTo(10.73728, 104.504001, 188, 102.49221, 108.544136, pwm_min[5])){}
+        // while(!moveArmTo(10.73728, 106.201454, 179.475250, 134.248535, 113.489792, pwm_min[5])){}
+        // while(!moveArmTo(10.73728, 58.5019, 133.532715, 138.673599, 114.010384, pwm_min[5])){}
         while(!moveArmTo(GET_FROM_L_0, GET_FROM_L_1,GET_FROM_L_2,GET_FROM_L_3, GET_FROM_L_4,pwm_min[5])){}
-        while(!moveArmTo(GET_FROM_L_0, GET_FROM_L_1,GET_FROM_L_2,GET_FROM_L_3, GET_FROM_L_4,pwm_max[5])){}
+        while(!moveArmTo(GET_FROM_L_0, GET_FROM_L_1,GET_FROM_L_2,GET_FROM_L_3, GET_FROM_L_4,curr[5])){}
         b1_mode = 0;
         b2_mode = 0;        
       } else if(b1_mode == 5){
         // Your Routine Here
         // Give To
-        while(!moveArmTo(GIVE_TO_R_0, GIVE_TO_R_1, GIVE_TO_R_2, GIVE_TO_R_3, GIVE_TO_R_4,pwm_max[5])){}
+        float curr[6];
+        curr[5] = angleToTicks(CLAW, PICKUP_0);
+        while(!moveArmTo(GIVE_TO_R_0, GIVE_TO_R_1, GIVE_TO_R_2, GIVE_TO_R_3, GIVE_TO_R_4,curr[5])){}
         //while(!moveArmTo(GET_FROM_L_0, GET_FROM_L_1,GET_FROM_L_2,GET_FROM_L_3, GET_FROM_L_4,pwm_max[5])){}
         b1_mode = 0;
         b2_mode = 0;
@@ -453,10 +465,11 @@ void loop()
         // curr[0] = calculated_angle(ROTATE_BASE);
         curr[2] = calculated_angle(ARM_SEG2);
         curr[3] = calculated_angle(ARM_SEG3);
+        curr[5] = angleToTicks(CLAW, PICKUP_0);
         while(!moveArmTo(PICKUP_0, 93.90239,curr[2],curr[3],PICKUP_4,pwm_mid[5])){}
         while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,pwm_min[5])){}
-        while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,pwm_max[5])){}
-        while(!moveArmTo(GIVE_TO_R_0, GIVE_TO_R_1, GIVE_TO_R_2, GIVE_TO_R_3, GIVE_TO_R_4,pwm_max[5])){}
+        while(!moveArmTo(PICKUP_0, PICKUP_1,PICKUP_2,PICKUP_3,PICKUP_4,curr[5])){}
+        while(!moveArmTo(GIVE_TO_R_0, GIVE_TO_R_1, GIVE_TO_R_2, GIVE_TO_R_3, GIVE_TO_R_4,curr[5])){}
         //while(!moveArmTo(GET_FROM_L_0, GET_FROM_L_1,GET_FROM_L_2,GET_FROM_L_3, GET_FROM_L_4,pwm_max[5])){}
         b1_mode = 0;
         b2_mode = 0;
@@ -492,8 +505,8 @@ void loop()
 
 
   /* This code is much faster than doing multiple Serial.print commands */
-  // sprintf(serialMsg, "ang[0]: %f, ang[1]: %f, ang[2]: %f, ang[3]: %f, ang[4]: %f, ang[5]: %f\n", calculated_angle(0), calculated_angle(1), calculated_angle(2), calculated_angle(3), calculated_angle(4), calculated_angle(5));
-  // Serial.print(serialMsg);
+  sprintf(serialMsg, "ang[0]: %f, ang[1]: %f, ang[2]: %f, ang[3]: %f, ang[4]: %f, ang[5]: %f\n", calculated_angle(0), calculated_angle(1), calculated_angle(2), calculated_angle(3), calculated_angle(4), calculated_angle(5));
+  Serial.print(serialMsg);
 
   // This code updates  led matrix display to show mode from left and right button press.
   if(b1_prev != b1_mode || b2_prev != b2_mode){
