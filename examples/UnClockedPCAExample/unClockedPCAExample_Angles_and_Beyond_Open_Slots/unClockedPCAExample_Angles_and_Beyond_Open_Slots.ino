@@ -56,13 +56,13 @@
 #define GIVE_TO_R_1 103.92385
 #define GIVE_TO_R_2 97.8068
 #define GIVE_TO_R_3 43.01419
-#define GIVE_TO_R_4 6.57256
+#define GIVE_TO_R_4 114.0128
 
 #define GET_FROM_L_0 10.73728
 #define GET_FROM_L_1 39.109726
 #define GET_FROM_L_2 96.830742
 #define GET_FROM_L_3 146.6127
-#define GET_FROM_L_4 114.0128
+#define GET_FROM_L_4 6.57256 
 
 #define MODES 8
 
